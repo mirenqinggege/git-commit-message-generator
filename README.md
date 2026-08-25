@@ -12,7 +12,7 @@
 
 ## 配置
 
-打开 `Settings/Preferences | Tools | Git Commit Message Generator`，填写 Base URL、API key、Model，并选择 API type。Base URL 示例为 `https://api.openai.com/v1`，插件会自动追加相应的接口路径。
+打开 `Settings/Preferences | Tools | Git Commit Message Generator`，填写 Base URL、API key，并选择 API type。点击“测试连接”只会从当前 Base URL 获取可用模型并刷新 Model 下拉框；选择模型后点击“测试模型”，插件会发送一个最多 1 token 的请求验证该模型。Model 字段是可编辑下拉框，也可以手动输入自定义模型。Base URL 示例为 `https://api.openai.com/v1`，插件会自动追加相应的接口路径。
 
 保存设置后，在 Git Commit 工具窗口点击提交消息编辑框上方的 **Generate Commit Message** 按钮即可。
 

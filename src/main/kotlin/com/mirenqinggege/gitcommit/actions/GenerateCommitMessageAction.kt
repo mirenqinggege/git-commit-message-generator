@@ -11,6 +11,7 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.vcs.VcsDataKeys
 import com.intellij.openapi.vcs.changes.Change
 import com.intellij.openapi.vcs.ui.CommitMessage
+import com.intellij.vcs.commit.CommitWorkflowUi
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.mirenqinggege.gitcommit.GitDiffCommandBuilder
@@ -30,7 +31,7 @@ class GenerateCommitMessageAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val commitMessage = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL) as? CommitMessage ?: return
-        val selectedChanges = e.getData(VcsDataKeys.CHANGES)?.toList().orEmpty()
+        val selectedChanges = includedChanges(e)
         if (selectedChanges.isEmpty()) {
             NotificationGroupManager.getInstance().getNotificationGroup("Git Commit Message Generator")
                 .createNotification(
@@ -90,6 +91,10 @@ class GenerateCommitMessageAction : DumbAwareAction() {
         }.queue()
     }
 }
+
+private fun includedChanges(e: AnActionEvent): List<Change> =
+    (e.getData(VcsDataKeys.COMMIT_WORKFLOW_UI) as? CommitWorkflowUi)?.getIncludedChanges()
+        ?: e.getData(VcsDataKeys.CHANGES)?.toList().orEmpty()
 
 private fun Change.relativePath(projectBasePath: String): String? {
     val path = virtualFile?.path ?: beforeRevision?.file?.path ?: afterRevision?.file?.path ?: return null
