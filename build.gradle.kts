@@ -17,3 +17,9 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
     }
 }
+
+tasks {
+    buildSearchableOptions {
+        enabled = false
+    }
+}
