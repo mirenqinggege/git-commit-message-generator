@@ -24,10 +24,25 @@ class CommitMessageGenerationTest {
     }
 
     @Test
-    fun `inspect disable thinking serialization`() {
+    fun `verifies chat completion params and disable thinking configuration`() {
+        val chatParams = com.openai.models.chat.completions.ChatCompletionCreateParams.builder()
+            .model("gpt-4o")
+            .addUserMessage("test prompt")
+            .reasoningEffort(com.openai.models.ReasoningEffort.NONE)
+            .putAdditionalBodyProperty("reasoning_effort", com.openai.core.JsonValue.from("none"))
+            .putAdditionalBodyProperty("enable_thinking", com.openai.core.JsonValue.from(false))
+            .putAdditionalBodyProperty("thinking", com.openai.core.JsonValue.from(mapOf("type" to "disabled")))
+            .build()
+
+        assertEquals("none", chatParams.reasoningEffort().get().asString())
+        assertEquals(
+            com.openai.core.JsonValue.from(false),
+            chatParams._additionalBodyProperties()["enable_thinking"]
+        )
+
         val responseParams = com.openai.models.responses.ResponseCreateParams.builder()
             .model("gpt-4o")
-            .input("test")
+            .input("test prompt")
             .reasoning(com.openai.models.Reasoning.builder().effort(com.openai.models.ReasoningEffort.NONE).build())
             .putAdditionalBodyProperty("reasoning_effort", com.openai.core.JsonValue.from("none"))
             .putAdditionalBodyProperty("enable_thinking", com.openai.core.JsonValue.from(false))
@@ -38,19 +53,6 @@ class CommitMessageGenerationTest {
         assertEquals(
             com.openai.core.JsonValue.from(false),
             responseParams._additionalBodyProperties()["enable_thinking"]
-        )
-
-        val completionParams = com.openai.models.completions.CompletionCreateParams.builder()
-            .model("gpt-4o")
-            .prompt("test")
-            .putAdditionalBodyProperty("reasoning_effort", com.openai.core.JsonValue.from("none"))
-            .putAdditionalBodyProperty("enable_thinking", com.openai.core.JsonValue.from(false))
-            .putAdditionalBodyProperty("thinking", com.openai.core.JsonValue.from(mapOf("type" to "disabled")))
-            .build()
-
-        assertEquals(
-            com.openai.core.JsonValue.from(false),
-            completionParams._additionalBodyProperties()["enable_thinking"]
         )
     }
 }

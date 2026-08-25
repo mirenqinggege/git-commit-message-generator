@@ -1,18 +1,14 @@
 package com.mirenqinggege.gitcommit.services
 
-import com.openai.client.okhttp.OpenAIOkHttpClient
-import com.openai.core.JsonValue
-import com.openai.models.Reasoning
-import com.openai.models.ReasoningEffort
-import com.openai.models.completions.CompletionCreateParams
-import com.openai.models.responses.ResponseCreateParams
-import com.openai.models.responses.ResponseStreamEvent
-import com.openai.models.models.Model
 import com.mirenqinggege.gitcommit.CommitPromptBuilder
 import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import com.mirenqinggege.gitcommit.settings.ApiType
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
-import com.openai.models.chat.completions.ChatCompletionStreamOptions
+import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.models.chat.completions.ChatCompletionCreateParams
+import com.openai.models.models.Model
+import com.openai.models.responses.ResponseCreateParams
+import com.openai.models.responses.ResponseStreamEvent
 import java.net.URI
 
 data class OpenAiClientSettings(
@@ -31,20 +27,19 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
         val prompt = "Reply with one token."
         val client = createClient()
         when (settings.apiType) {
-            ApiType.COMPLETIONS -> client.completions().create(
-                CompletionCreateParams.builder()
+            ApiType.COMPLETIONS -> client.chat().completions().create(
+                ChatCompletionCreateParams.builder()
                     .model(settings.model)
-                    .prompt(prompt)
-                    .maxTokens(1)
-                    .disableThinking()
+                    .addUserMessage(prompt)
+                    .maxCompletionTokens(1)
                     .build()
             )
+
             ApiType.RESPONSES -> client.responses().create(
                 ResponseCreateParams.builder()
                     .model(settings.model)
                     .input(prompt)
                     .maxOutputTokens(1)
-                    .disableThinking()
                     .build()
             )
         }
@@ -60,7 +55,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
         val prompt = CommitPromptBuilder.build(diff)
         val baseUrl = settings.baseUrl.trimEnd('/')
         val endpoint = baseUrl + when (settings.apiType) {
-            ApiType.COMPLETIONS -> "/completions"
+            ApiType.COMPLETIONS -> "/chat/completions"
             ApiType.RESPONSES -> "/responses"
         }
         validateEndpoint(endpoint)
@@ -74,15 +69,14 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
         }
 
         when (settings.apiType) {
-            ApiType.COMPLETIONS -> client.completions().createStreaming(
-                CompletionCreateParams.builder()
+            ApiType.COMPLETIONS -> client.chat().completions().createStreaming(
+                ChatCompletionCreateParams.builder()
                     .model(settings.model)
-                    .prompt(prompt)
-                    .disableThinking()
+                    .addUserMessage(prompt)
                     .build()
             ).use { stream ->
                 stream.stream().forEach { chunk ->
-                    chunk.choices().firstOrNull()?.text()?.let(::appendDelta)
+                    chunk.choices().firstOrNull()?.delta()?.content()?.ifPresent(::appendDelta)
                 }
             }
 
@@ -90,7 +84,6 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                 ResponseCreateParams.builder()
                     .model(settings.model)
                     .input(prompt)
-                    .disableThinking()
                     .build()
             ).use { stream ->
                 stream.stream().forEach { event: ResponseStreamEvent ->
@@ -120,17 +113,4 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
         require(uri.userInfo == null) { "Base URL must not contain embedded credentials" }
         return uri
     }
-}
-
-private fun CompletionCreateParams.Builder.disableThinking(): CompletionCreateParams.Builder = apply {
-    putAdditionalBodyProperty("reasoning_effort", JsonValue.from("none"))
-    putAdditionalBodyProperty("enable_thinking", JsonValue.from(false))
-    putAdditionalBodyProperty("thinking", JsonValue.from(mapOf("type" to "disabled")))
-}
-
-private fun ResponseCreateParams.Builder.disableThinking(): ResponseCreateParams.Builder = apply {
-    reasoning(Reasoning.builder().effort(ReasoningEffort.NONE).build())
-    putAdditionalBodyProperty("reasoning_effort", JsonValue.from("none"))
-    putAdditionalBodyProperty("enable_thinking", JsonValue.from(false))
-    putAdditionalBodyProperty("thinking", JsonValue.from(mapOf("type" to "disabled")))
 }
