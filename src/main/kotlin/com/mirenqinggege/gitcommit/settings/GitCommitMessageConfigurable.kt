@@ -1,13 +1,12 @@
 package com.mirenqinggege.gitcommit.settings
 
-import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.panel
+import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import javax.swing.JComponent
 
 class GitCommitMessageConfigurable : Configurable {
@@ -16,14 +15,16 @@ class GitCommitMessageConfigurable : Configurable {
     private var modelField: JBTextField? = null
     private var apiTypeField: ComboBox<ApiType>? = null
 
-    override fun getDisplayName() = "Git Commit Message Generator"
+    override fun getDisplayName() = GitCommitMessageBundle.message("settings.display.name")
 
     override fun createComponent(): JComponent = panel {
-        row("Base URL:") { baseUrlField = textField().comment("For example: https://api.openai.com/v1").component }
-        row("API key:") { apiKeyField = passwordField().component }
-        row("Model:") { modelField = textField().component }
-        row("API type:") { apiTypeField = comboBox(ApiType.entries).component }
-        row { comment("The plugin sends the current Git diff to the configured OpenAI-compatible endpoint.") }
+        row(GitCommitMessageBundle.message("settings.base.url")) {
+            baseUrlField = textField().comment(GitCommitMessageBundle.message("settings.base.url.comment")).component
+        }
+        row(GitCommitMessageBundle.message("settings.api.key")) { apiKeyField = passwordField().component }
+        row(GitCommitMessageBundle.message("settings.model")) { modelField = textField().component }
+        row(GitCommitMessageBundle.message("settings.api.type")) { apiTypeField = comboBox(ApiType.entries).component }
+        row { comment(GitCommitMessageBundle.message("settings.description")) }
         reset()
     }
 

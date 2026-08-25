@@ -3,6 +3,7 @@
     <id>com.mirenqinggege.gitcommit</id>
     <name>Git Commit Message Generator</name>
     <vendor>mirenqinggege</vendor>
+    <resource-bundle>messages.GitCommitMessageBundle</resource-bundle>
     <description><![CDATA[
         <p>Generate a Conventional Commits message from the current Git diff directly in IntelliJ IDEA's Commit tool window.</p>
         <p>Configure any OpenAI-compatible API endpoint in Settings. Both the Completions and Responses APIs are supported.</p>
@@ -12,13 +13,14 @@
     <depends>com.intellij.modules.vcs</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <notificationGroup id="Git Commit Message Generator" displayType="BALLOON" />
+        <notificationGroup id="Git Commit Message Generator" displayType="BALLOON"
+                           key="notification.group.git.commit.message.generator"/>
         <applicationConfigurable instance="com.mirenqinggege.gitcommit.settings.GitCommitMessageConfigurable"
-                                  parentId="tools" displayName="Git Commit Message Generator"/>
+                                 parentId="tools" key="settings.display.name"/>
     </extensions>
     <actions>
-        <action id="GitCommitMessageGenerator.Generate" class="com.mirenqinggege.gitcommit.actions.GenerateCommitMessageAction"
-                text="Generate Commit Message" description="Generate a commit message from the Git diff">
+        <action id="GitCommitMessageGenerator.Generate"
+                class="com.mirenqinggege.gitcommit.actions.GenerateCommitMessageAction">
             <add-to-group group-id="ChangesView.CommitToolbar" anchor="last"/>
         </action>
     </actions>

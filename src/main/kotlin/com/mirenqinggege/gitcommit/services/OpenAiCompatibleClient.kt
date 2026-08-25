@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.mirenqinggege.gitcommit.CommitPromptBuilder
 import com.mirenqinggege.gitcommit.OpenAiResponseParser
+import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import com.mirenqinggege.gitcommit.settings.ApiType
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
 import java.net.URI
@@ -16,9 +17,9 @@ class OpenAiCompatibleClient(private val settings: GitCommitMessageSettings) {
     private val httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
 
     fun generate(diff: String): String {
-        require(settings.baseUrl.isNotBlank()) { "Base URL is not configured" }
-        require(settings.apiKey.isNotBlank()) { "API key is not configured" }
-        require(diff.isNotBlank()) { "There are no Git changes to analyze" }
+        require(settings.baseUrl.isNotBlank()) { GitCommitMessageBundle.message("error.base.url.missing") }
+        require(settings.apiKey.isNotBlank()) { GitCommitMessageBundle.message("error.api.key.missing") }
+        require(diff.isNotBlank()) { GitCommitMessageBundle.message("error.diff.empty") }
 
         val prompt = CommitPromptBuilder.build(diff)
         val payload = JsonObject().apply {
@@ -40,7 +41,9 @@ class OpenAiCompatibleClient(private val settings: GitCommitMessageSettings) {
             .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
             .build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() !in 200..299) error("AI request failed (${response.statusCode()}): ${response.body().take(300)}")
+        if (response.statusCode() !in 200..299) error(
+            GitCommitMessageBundle.message("error.request.failed", response.statusCode(), response.body().take(300))
+        )
         return OpenAiResponseParser.parse(response.body())
     }
 

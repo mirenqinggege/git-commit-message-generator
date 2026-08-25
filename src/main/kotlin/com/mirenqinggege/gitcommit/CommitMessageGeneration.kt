@@ -25,7 +25,7 @@ object CommitPromptBuilder {
 object OpenAiResponseParser {
     fun parse(body: String): String {
         val root = JsonParser.parseString(body)
-        val text = findText(root) ?: error("The AI response did not contain generated text")
+        val text = findText(root) ?: error(GitCommitMessageBundle.message("error.response.empty"))
         return text.trim().trim('`').trim()
     }
 

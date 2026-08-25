@@ -14,6 +14,7 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.mirenqinggege.gitcommit.services.OpenAiCompatibleClient
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
+import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 
 class GenerateCommitMessageAction : DumbAwareAction() {
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
@@ -28,17 +29,17 @@ class GenerateCommitMessageAction : DumbAwareAction() {
         val project = e.project ?: return
         val commitMessage = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL) as? CommitMessage ?: return
         val settings = ApplicationManager.getApplication().getService(GitCommitMessageSettings::class.java)
-        object : Task.Backgroundable(project, "Generating commit message", true) {
+        object : Task.Backgroundable(project, GitCommitMessageBundle.message("progress.generating"), true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
-                    indicator.text = "Reading Git diff"
+                    indicator.text = GitCommitMessageBundle.message("progress.reading.diff")
                     val diff = CapturingProcessHandler(GeneralCommandLine("git", "diff", "HEAD").withWorkDirectory(project.basePath)).runProcess().stdout
-                    indicator.text = "Asking AI"
+                    indicator.text = GitCommitMessageBundle.message("progress.asking.ai")
                     val result = OpenAiCompatibleClient(settings).generate(diff)
                     ApplicationManager.getApplication().invokeLater { commitMessage.setCommitMessage(result) }
                 } catch (error: Exception) {
                     NotificationGroupManager.getInstance().getNotificationGroup("Git Commit Message Generator")
-                        .createNotification("Could not generate commit message: ${error.message}", NotificationType.ERROR)
+                        .createNotification(GitCommitMessageBundle.message("notification.generate.failed", error.message.orEmpty()), NotificationType.ERROR)
                         .notify(project)
                 }
             }
