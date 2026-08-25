@@ -4,4 +4,6 @@
 
 ## [Unreleased]
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Generate Conventional Commits messages from the current Git diff.
+- OpenAI-compatible Completions and Responses API support.
+- Settings page for the API base URL, API key, model, and API type.
