@@ -11,7 +11,7 @@ class CommitMessageGenerationTest {
 
         assertEquals(true, prompt.contains("diff --git a/a.kt b/a.kt"))
         assertEquals(true, prompt.contains("Conventional Commits"))
-        assertEquals(true, prompt.contains("仅返回提交消息"))
+        assertEquals(true, prompt.contains("仅返回一条提交消息"))
     }
 
     @Test
@@ -26,5 +26,13 @@ class CommitMessageGenerationTest {
         val response = """{"output":[{"type":"message","content":[{"type":"output_text","text":"fix: handle empty diff"}]}]}"""
 
         assertEquals("fix: handle empty diff", OpenAiResponseParser.parse(response))
+    }
+
+    @Test
+    fun `builds a diff command limited to selected files`() {
+        assertEquals(
+            listOf("git", "diff", "HEAD", "--", "src/main/App.kt", "README.md"),
+            GitDiffCommandBuilder.arguments(listOf("src/main/App.kt", "README.md"))
+        )
     }
 }

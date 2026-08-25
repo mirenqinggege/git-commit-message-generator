@@ -22,6 +22,11 @@ object CommitPromptBuilder {
     """.trimIndent()
 }
 
+object GitDiffCommandBuilder {
+    fun arguments(selectedPaths: List<String>): List<String> =
+        listOf("git", "diff", "HEAD", "--") + selectedPaths
+}
+
 object OpenAiResponseParser {
     fun parse(body: String): String {
         val root = JsonParser.parseString(body)
