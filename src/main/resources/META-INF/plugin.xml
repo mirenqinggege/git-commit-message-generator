@@ -11,14 +11,15 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.vcs</depends>
 
-    <notificationGroup id="Git Commit Message Generator" displayType="BALLOON" />
-
     <extensions defaultExtensionNs="com.intellij">
-        <applicationConfigurable instance="com.mirenqinggege.gitcommit.settings.GitCommitMessageConfigurable" parentId="tools"/>
+        <notificationGroup id="Git Commit Message Generator" displayType="BALLOON" />
+        <applicationConfigurable instance="com.mirenqinggege.gitcommit.settings.GitCommitMessageConfigurable"
+                                  parentId="tools" displayName="Git Commit Message Generator"/>
     </extensions>
     <actions>
         <action id="GitCommitMessageGenerator.Generate" class="com.mirenqinggege.gitcommit.actions.GenerateCommitMessageAction"
-                text="Generate Commit Message" description="Generate a commit message from the Git diff"/>
-        <add-to-group group-id="ChangesView.CommitToolbar" action-id="GitCommitMessageGenerator.Generate" anchor="last"/>
+                text="Generate Commit Message" description="Generate a commit message from the Git diff">
+            <add-to-group group-id="ChangesView.CommitToolbar" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
