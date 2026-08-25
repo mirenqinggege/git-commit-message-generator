@@ -1,8 +1,5 @@
 package com.mirenqinggege.gitcommit
 
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
-
 object CommitPromptBuilder {
     fun build(diff: String): String = """
         You are an expert software engineer. Analyze the git diff below and write a concise, standard Conventional Commits message.
@@ -25,23 +22,4 @@ object CommitPromptBuilder {
 object GitDiffCommandBuilder {
     fun arguments(selectedPaths: List<String>): List<String> =
         listOf("git", "diff", "HEAD", "--") + selectedPaths
-}
-
-object OpenAiResponseParser {
-    fun parse(body: String): String {
-        val root = JsonParser.parseString(body)
-        val text = findText(root) ?: error(GitCommitMessageBundle.message("error.response.empty"))
-        return text.trim().trim('`').trim()
-    }
-
-    private fun findText(element: JsonElement): String? {
-        if (element.isJsonObject) {
-            val objectValue = element.asJsonObject
-            objectValue["text"]?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.let { return it.asString }
-            objectValue.entrySet().forEach { (_, value) -> findText(value)?.let { return it } }
-        } else if (element.isJsonArray) {
-            element.asJsonArray.forEach { findText(it)?.let { value -> return value } }
-        }
-        return null
-    }
 }

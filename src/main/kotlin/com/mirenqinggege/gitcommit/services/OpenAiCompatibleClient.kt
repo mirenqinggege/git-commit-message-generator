@@ -1,50 +1,56 @@
 package com.mirenqinggege.gitcommit.services
 
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.openai.client.OpenAIClient
+import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.models.completions.CompletionCreateParams
+import com.openai.models.responses.ResponseCreateParams
 import com.mirenqinggege.gitcommit.CommitPromptBuilder
-import com.mirenqinggege.gitcommit.OpenAiResponseParser
 import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import com.mirenqinggege.gitcommit.settings.ApiType
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
 
 class OpenAiCompatibleClient(private val settings: GitCommitMessageSettings) {
-    private val httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
-
     fun generate(diff: String): String {
         require(settings.baseUrl.isNotBlank()) { GitCommitMessageBundle.message("error.base.url.missing") }
         require(settings.apiKey.isNotBlank()) { GitCommitMessageBundle.message("error.api.key.missing") }
         require(diff.isNotBlank()) { GitCommitMessageBundle.message("error.diff.empty") }
 
         val prompt = CommitPromptBuilder.build(diff)
-        val payload = JsonObject().apply {
-            addProperty("model", settings.model)
-            when (settings.apiType) {
-                ApiType.COMPLETIONS -> addProperty("prompt", prompt)
-                ApiType.RESPONSES -> addProperty("input", prompt)
-            }
-        }
-        val endpoint = settings.baseUrl.trimEnd('/') + when (settings.apiType) {
+        val baseUrl = settings.baseUrl.trimEnd('/')
+        val endpoint = baseUrl + when (settings.apiType) {
             ApiType.COMPLETIONS -> "/completions"
             ApiType.RESPONSES -> "/responses"
         }
-        val uri = validateEndpoint(endpoint)
-        val request = HttpRequest.newBuilder(uri)
-            .timeout(Duration.ofSeconds(90))
-            .header("Authorization", "Bearer ${settings.apiKey}")
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+        validateEndpoint(endpoint)
+        val client = OpenAIOkHttpClient.builder()
+            .apiKey(settings.apiKey)
+            .baseUrl(baseUrl)
             .build()
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() !in 200..299) error(
-            GitCommitMessageBundle.message("error.request.failed", response.statusCode(), response.body().take(300))
-        )
-        return OpenAiResponseParser.parse(response.body())
+
+        return when (settings.apiType) {
+            ApiType.COMPLETIONS -> client.completions().create(
+                CompletionCreateParams.builder()
+                    .model(settings.model)
+                    .prompt(prompt)
+                    .build()
+            ).choices().firstOrNull()?.text()?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: error(GitCommitMessageBundle.message("error.response.empty"))
+
+            ApiType.RESPONSES -> client.responses().create(
+                ResponseCreateParams.builder()
+                    .model(settings.model)
+                    .input(prompt)
+                    .build()
+            ).output().asSequence()
+                .flatMap { it.message().orElse(null)?.content().orEmpty().asSequence() }
+                .mapNotNull { it.outputText().orElse(null)?.text() }
+                .joinToString("")
+                .trim()
+                .takeIf { it.isNotBlank() }
+                ?: error(GitCommitMessageBundle.message("error.response.empty"))
+        }
     }
 
     /**

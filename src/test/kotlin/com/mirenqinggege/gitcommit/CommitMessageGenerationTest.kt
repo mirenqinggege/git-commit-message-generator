@@ -15,20 +15,6 @@ class CommitMessageGenerationTest {
     }
 
     @Test
-    fun `extracts text from completions response`() {
-        val response = """{"choices":[{"text":" feat: add commit message generator "}]}"""
-
-        assertEquals("feat: add commit message generator", OpenAiResponseParser.parse(response))
-    }
-
-    @Test
-    fun `extracts text from responses output response`() {
-        val response = """{"output":[{"type":"message","content":[{"type":"output_text","text":"fix: handle empty diff"}]}]}"""
-
-        assertEquals("fix: handle empty diff", OpenAiResponseParser.parse(response))
-    }
-
-    @Test
     fun `builds a diff command limited to selected files`() {
         assertEquals(
             listOf("git", "diff", "HEAD", "--", "src/main/App.kt", "README.md"),
