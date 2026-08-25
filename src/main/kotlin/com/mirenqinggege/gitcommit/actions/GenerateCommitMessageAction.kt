@@ -11,7 +11,6 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.vcs.VcsDataKeys
 import com.intellij.openapi.vcs.changes.Change
 import com.intellij.openapi.vcs.ui.CommitMessage
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.mirenqinggege.gitcommit.GitDiffCommandBuilder
@@ -65,6 +64,7 @@ class GenerateCommitMessageAction : DumbAwareAction() {
         object : Task.Backgroundable(project, GitCommitMessageBundle.message("progress.generating"), true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
+                    ApplicationManager.getApplication().invokeLater { commitMessage.setCommitMessage("") }
                     indicator.text = GitCommitMessageBundle.message("progress.reading.diff")
                     val command = GeneralCommandLine(*GitDiffCommandBuilder.arguments(selectedPaths).toTypedArray())
                         .withWorkDirectory(projectBasePath)
@@ -72,8 +72,15 @@ class GenerateCommitMessageAction : DumbAwareAction() {
                     if (process.exitCode != 0) error(process.stderr.ifBlank { "Git diff failed (${process.exitCode})" })
                     val diff = process.stdout
                     indicator.text = GitCommitMessageBundle.message("progress.asking.ai")
-                    val result = OpenAiCompatibleClient(settings).generate(diff)
-                    ApplicationManager.getApplication().invokeLater { commitMessage.setCommitMessage(result) }
+                    val result = StringBuilder()
+                    OpenAiCompatibleClient(settings).generateStreaming(diff) { delta ->
+                        if (indicator.isCanceled) return@generateStreaming
+                        result.append(delta)
+                        val currentMessage = result.toString()
+                        ApplicationManager.getApplication().invokeLater {
+                            if (!indicator.isCanceled) commitMessage.setCommitMessage(currentMessage)
+                        }
+                    }
                 } catch (error: Exception) {
                     NotificationGroupManager.getInstance().getNotificationGroup("Git Commit Message Generator")
                         .createNotification(GitCommitMessageBundle.message("notification.generate.failed", error.message.orEmpty()), NotificationType.ERROR)

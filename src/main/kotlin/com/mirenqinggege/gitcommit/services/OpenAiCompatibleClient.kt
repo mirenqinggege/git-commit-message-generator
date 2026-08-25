@@ -1,9 +1,9 @@
 package com.mirenqinggege.gitcommit.services
 
-import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.completions.CompletionCreateParams
 import com.openai.models.responses.ResponseCreateParams
+import com.openai.models.responses.ResponseStreamEvent
 import com.mirenqinggege.gitcommit.CommitPromptBuilder
 import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import com.mirenqinggege.gitcommit.settings.ApiType
@@ -11,7 +11,7 @@ import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
 import java.net.URI
 
 class OpenAiCompatibleClient(private val settings: GitCommitMessageSettings) {
-    fun generate(diff: String): String {
+    fun generateStreaming(diff: String, onDelta: (String) -> Unit): String {
         require(settings.baseUrl.isNotBlank()) { GitCommitMessageBundle.message("error.base.url.missing") }
         require(settings.apiKey.isNotBlank()) { GitCommitMessageBundle.message("error.api.key.missing") }
         require(diff.isNotBlank()) { GitCommitMessageBundle.message("error.diff.empty") }
@@ -28,29 +28,38 @@ class OpenAiCompatibleClient(private val settings: GitCommitMessageSettings) {
             .baseUrl(baseUrl)
             .build()
 
-        return when (settings.apiType) {
-            ApiType.COMPLETIONS -> client.completions().create(
+        val generated = StringBuilder()
+        fun appendDelta(delta: String) {
+            if (delta.isEmpty()) return
+            generated.append(delta)
+            onDelta(delta)
+        }
+
+        when (settings.apiType) {
+            ApiType.COMPLETIONS -> client.completions().createStreaming(
                 CompletionCreateParams.builder()
                     .model(settings.model)
                     .prompt(prompt)
                     .build()
-            ).choices().firstOrNull()?.text()?.trim()
-                ?.takeIf { it.isNotBlank() }
-                ?: error(GitCommitMessageBundle.message("error.response.empty"))
+            ).use { stream ->
+                stream.stream().forEach { chunk ->
+                    chunk.choices().firstOrNull()?.text()?.let(::appendDelta)
+                }
+            }
 
-            ApiType.RESPONSES -> client.responses().create(
+            ApiType.RESPONSES -> client.responses().createStreaming(
                 ResponseCreateParams.builder()
                     .model(settings.model)
                     .input(prompt)
                     .build()
-            ).output().asSequence()
-                .flatMap { it.message().orElse(null)?.content().orEmpty().asSequence() }
-                .mapNotNull { it.outputText().orElse(null)?.text() }
-                .joinToString("")
-                .trim()
-                .takeIf { it.isNotBlank() }
-                ?: error(GitCommitMessageBundle.message("error.response.empty"))
+            ).use { stream ->
+                stream.stream().forEach { event: ResponseStreamEvent ->
+                    event.outputTextDelta().ifPresent { appendDelta(it.delta()) }
+                }
+            }
         }
+        return generated.toString().trim().takeIf { it.isNotBlank() }
+            ?: error(GitCommitMessageBundle.message("error.response.empty"))
     }
 
     /**

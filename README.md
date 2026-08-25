@@ -7,6 +7,7 @@
 - 直接集成在 IntelliJ IDEA 的 Git Commit 工具窗口中。
 - 使用当前提交范围的 `git diff HEAD` 作为生成上下文。
 - 支持 OpenAI-compatible 的 Completions（`/completions`）和 Responses（`/responses`）接口。
+- 使用官方 `com.openai:openai-java:4.52.0` SDK 发起流式请求，模型输出会实时填入提交消息编辑框。
 - 支持自定义 Base URL、API Key、模型名称和 API 类型。
 
 ## 配置
