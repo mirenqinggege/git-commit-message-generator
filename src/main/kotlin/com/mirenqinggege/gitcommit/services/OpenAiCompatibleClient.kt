@@ -5,6 +5,9 @@ import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import com.mirenqinggege.gitcommit.settings.ApiType
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
 import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.core.JsonValue
+import com.openai.models.Reasoning
+import com.openai.models.ReasoningEffort
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.models.Model
 import com.openai.models.responses.ResponseCreateParams
@@ -15,12 +18,13 @@ data class OpenAiClientSettings(
     val baseUrl: String,
     val apiKey: String,
     val model: String,
-    val apiType: ApiType
+    val apiType: ApiType,
+    val enableThinking: Boolean = false
 )
 
 class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
     constructor(settings: GitCommitMessageSettings) : this(
-        OpenAiClientSettings(settings.baseUrl, settings.apiKey, settings.model, settings.apiType)
+        OpenAiClientSettings(settings.baseUrl, settings.apiKey, settings.model, settings.apiType, settings.enableThinking)
     )
 
     fun testConnection() {
@@ -32,6 +36,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                     .model(settings.model)
                     .addUserMessage(prompt)
                     .maxCompletionTokens(1)
+                    .applyThinking(settings.enableThinking)
                     .build()
             )
 
@@ -40,6 +45,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                     .model(settings.model)
                     .input(prompt)
                     .maxOutputTokens(1)
+                    .applyThinking(settings.enableThinking)
                     .build()
             )
         }
@@ -73,6 +79,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                 ChatCompletionCreateParams.builder()
                     .model(settings.model)
                     .addUserMessage(prompt)
+                    .applyThinking(settings.enableThinking)
                     .build()
             ).use { stream ->
                 stream.stream().forEach { chunk ->
@@ -84,6 +91,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                 ResponseCreateParams.builder()
                     .model(settings.model)
                     .input(prompt)
+                    .applyThinking(settings.enableThinking)
                     .build()
             ).use { stream ->
                 stream.stream().forEach { event: ResponseStreamEvent ->
@@ -114,3 +122,24 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
         return uri
     }
 }
+
+/**
+ * When thinking is disabled, every known spelling of "no reasoning" is sent because
+ * OpenAI-compatible providers disagree on which parameter they honor. When enabled, nothing
+ * is added and the provider's default applies.
+ */
+internal fun ChatCompletionCreateParams.Builder.applyThinking(enableThinking: Boolean): ChatCompletionCreateParams.Builder =
+    if (enableThinking) this else apply {
+        reasoningEffort(ReasoningEffort.NONE)
+        putAdditionalBodyProperty("reasoning_effort", JsonValue.from("none"))
+        putAdditionalBodyProperty("enable_thinking", JsonValue.from(false))
+        putAdditionalBodyProperty("thinking", JsonValue.from(mapOf("type" to "disabled")))
+    }
+
+internal fun ResponseCreateParams.Builder.applyThinking(enableThinking: Boolean): ResponseCreateParams.Builder =
+    if (enableThinking) this else apply {
+        reasoning(Reasoning.builder().effort(ReasoningEffort.NONE).build())
+        putAdditionalBodyProperty("reasoning_effort", JsonValue.from("none"))
+        putAdditionalBodyProperty("enable_thinking", JsonValue.from(false))
+        putAdditionalBodyProperty("thinking", JsonValue.from(mapOf("type" to "disabled")))
+    }

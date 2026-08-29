@@ -1,6 +1,13 @@
 package com.mirenqinggege.gitcommit
 
+import com.mirenqinggege.gitcommit.services.applyThinking
+import com.openai.core.JsonValue
+import com.openai.models.ReasoningEffort
+import com.openai.models.chat.completions.ChatCompletionCreateParams
+import com.openai.models.responses.ResponseCreateParams
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CommitMessageGenerationTest {
@@ -24,35 +31,55 @@ class CommitMessageGenerationTest {
     }
 
     @Test
-    fun `verifies chat completion params and disable thinking configuration`() {
-        val chatParams = com.openai.models.chat.completions.ChatCompletionCreateParams.builder()
+    fun `disabling thinking adds no-reasoning parameters to chat completion params`() {
+        val chatParams = ChatCompletionCreateParams.builder()
             .model("gpt-4o")
             .addUserMessage("test prompt")
-            .reasoningEffort(com.openai.models.ReasoningEffort.NONE)
-            .putAdditionalBodyProperty("reasoning_effort", com.openai.core.JsonValue.from("none"))
-            .putAdditionalBodyProperty("enable_thinking", com.openai.core.JsonValue.from(false))
-            .putAdditionalBodyProperty("thinking", com.openai.core.JsonValue.from(mapOf("type" to "disabled")))
+            .applyThinking(enableThinking = false)
             .build()
 
-        assertEquals("none", chatParams.reasoningEffort().get().asString())
+        assertEquals(ReasoningEffort.NONE, chatParams.reasoningEffort().get())
+        assertEquals(JsonValue.from(false), chatParams._additionalBodyProperties()["enable_thinking"])
         assertEquals(
-            com.openai.core.JsonValue.from(false),
-            chatParams._additionalBodyProperties()["enable_thinking"]
+            JsonValue.from(mapOf("type" to "disabled")),
+            chatParams._additionalBodyProperties()["thinking"]
         )
+    }
 
-        val responseParams = com.openai.models.responses.ResponseCreateParams.builder()
+    @Test
+    fun `disabling thinking adds no-reasoning parameters to response params`() {
+        val responseParams = ResponseCreateParams.builder()
             .model("gpt-4o")
             .input("test prompt")
-            .reasoning(com.openai.models.Reasoning.builder().effort(com.openai.models.ReasoningEffort.NONE).build())
-            .putAdditionalBodyProperty("reasoning_effort", com.openai.core.JsonValue.from("none"))
-            .putAdditionalBodyProperty("enable_thinking", com.openai.core.JsonValue.from(false))
-            .putAdditionalBodyProperty("thinking", com.openai.core.JsonValue.from(mapOf("type" to "disabled")))
+            .applyThinking(enableThinking = false)
             .build()
 
-        assertEquals("none", responseParams.reasoning().get().effort().get().asString())
+        assertEquals(ReasoningEffort.NONE, responseParams.reasoning().get().effort().get())
+        assertEquals(JsonValue.from(false), responseParams._additionalBodyProperties()["enable_thinking"])
         assertEquals(
-            com.openai.core.JsonValue.from(false),
-            responseParams._additionalBodyProperties()["enable_thinking"]
+            JsonValue.from(mapOf("type" to "disabled")),
+            responseParams._additionalBodyProperties()["thinking"]
         )
+    }
+
+    @Test
+    fun `enabling thinking leaves request parameters untouched`() {
+        val chatParams = ChatCompletionCreateParams.builder()
+            .model("gpt-4o")
+            .addUserMessage("test prompt")
+            .applyThinking(enableThinking = true)
+            .build()
+
+        assertTrue(chatParams.reasoningEffort().isEmpty)
+        assertFalse(chatParams._additionalBodyProperties().containsKey("enable_thinking"))
+
+        val responseParams = ResponseCreateParams.builder()
+            .model("gpt-4o")
+            .input("test prompt")
+            .applyThinking(enableThinking = true)
+            .build()
+
+        assertTrue(responseParams.reasoning().isEmpty)
+        assertFalse(responseParams._additionalBodyProperties().containsKey("enable_thinking"))
     }
 }

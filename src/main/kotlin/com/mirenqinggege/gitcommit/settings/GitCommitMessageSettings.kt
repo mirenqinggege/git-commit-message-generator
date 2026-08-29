@@ -16,7 +16,8 @@ class GitCommitMessageSettings : PersistentStateComponent<GitCommitMessageSettin
     data class State(
         var baseUrl: String = "https://api.openai.com/v1",
         var model: String = "gpt-4o-mini",
-        var apiType: ApiType = ApiType.RESPONSES
+        var apiType: ApiType = ApiType.RESPONSES,
+        var enableThinking: Boolean = false
     )
 
     private var state = State()
@@ -30,6 +31,7 @@ class GitCommitMessageSettings : PersistentStateComponent<GitCommitMessageSettin
     var baseUrl: String get() = state.baseUrl; set(value) { state.baseUrl = value }
     var model: String get() = state.model; set(value) { state.model = value }
     var apiType: ApiType get() = state.apiType; set(value) { state.apiType = value }
+    var enableThinking: Boolean get() = state.enableThinking; set(value) { state.enableThinking = value }
 
     /** API key is persisted in the encrypted credential store, not the state XML. */
     var apiKey: String
