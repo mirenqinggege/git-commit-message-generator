@@ -20,7 +20,8 @@
     </extensions>
     <actions>
         <action id="GitCommitMessageGenerator.Generate"
-                class="com.mirenqinggege.gitcommit.actions.GenerateCommitMessageAction">
+                class="com.mirenqinggege.gitcommit.actions.GenerateCommitMessageAction"
+                icon="/icons/generateCommit.svg">
             <add-to-group group-id="ChangesView.CommitToolbar" anchor="last"/>
         </action>
     </actions>

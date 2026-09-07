@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <defs>
+    <!-- Background subtle gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2D3139"/>
+      <stop offset="100%" stop-color="#1B1D22"/>
+    </linearGradient>
+
+    <!-- AI Sparkle vibrant gradient -->
+    <linearGradient id="sparkleGrad" x1="18" y1="6" x2="34" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+
+    <!-- Branch line gradient -->
+    <linearGradient id="lineGrad" x1="8" y1="32" x2="26" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6B7280"/>
+      <stop offset="100%" stop-color="#93C5FD"/>
+    </linearGradient>
+
+    <!-- Glow effect filter -->
+    <filter id="glow" x="12" y="3" width="26" height="26" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Outer container with rounded corners -->
+  <rect x="1" y="1" width="38" height="38" rx="8.5" fill="url(#bgGrad)" stroke="#3E4451" stroke-width="1.2"/>
+
+  <!-- Git Commit Graph Lines -->
+  <!-- Main trunk line -->
+  <line x1="12" y1="10" x2="12" y2="30" stroke="#4B5563" stroke-width="2.2" stroke-linecap="round"/>
+  
+  <!-- Branch curve going to commit node -->
+  <path d="M12 26C12 20 22 23 22 17" stroke="url(#lineGrad)" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- Git Nodes -->
+  <!-- Bottom trunk node -->
+  <circle cx="12" cy="27" r="3.2" fill="#1F2937" stroke="#60A5FA" stroke-width="2"/>
+
+  <!-- Top trunk node -->
+  <circle cx="12" cy="13" r="2.8" fill="#1F2937" stroke="#9CA3AF" stroke-width="1.8"/>
+
+  <!-- Branch active commit node -->
+  <circle cx="22" cy="17" r="3.2" fill="#1E293B" stroke="#38BDF8" stroke-width="2"/>
+
+  <!-- AI Magic Sparkle radiating from the commit -->
+  <g filter="url(#glow)">
+    <!-- Primary large 4-point star -->
+    <path d="M27 6C27 10 29.5 12.5 33.5 12.5C29.5 12.5 27 15 27 19C27 15 24.5 12.5 20.5 12.5C24.5 12.5 27 10 27 6Z" fill="url(#sparkleGrad)"/>
+    <!-- Secondary small sparkle -->
+    <path d="M33 21C33 22.8 34.2 24 36 24C34.2 24 33 25.2 33 27C33 25.2 31.8 24 30 24C31.8 24 33 22.8 33 21Z" fill="#38BDF8" opacity="0.9"/>
+  </g>
+</svg>

@@ -14,6 +14,7 @@ import com.intellij.openapi.vcs.ui.CommitMessage
 import com.intellij.vcs.commit.CommitWorkflowUi
 import com.intellij.ide.ActivityTracker
 import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
+import com.intellij.openapi.util.IconLoader
 import com.mirenqinggege.gitcommit.GitDiffResolver
 import com.mirenqinggege.gitcommit.services.OpenAiCompatibleClient
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
@@ -24,6 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class GenerateCommitMessageAction : DumbAwareAction() {
     private val runningTasks = ConcurrentHashMap<Project, RunningTask>()
+
+    companion object {
+        val GENERATE_ICON = IconLoader.getIcon("/icons/generateCommit.svg", GenerateCommitMessageAction::class.java)
+    }
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
@@ -46,7 +51,7 @@ class GenerateCommitMessageAction : DumbAwareAction() {
         } else {
             e.presentation.text = GitCommitMessageBundle.message("action.generate.text")
             e.presentation.description = GitCommitMessageBundle.message("action.generate.description")
-            e.presentation.icon = null
+            e.presentation.icon = GENERATE_ICON
             val selectedChanges = includedChanges(e)
             e.presentation.isEnabled = selectedChanges.isNotEmpty()
         }

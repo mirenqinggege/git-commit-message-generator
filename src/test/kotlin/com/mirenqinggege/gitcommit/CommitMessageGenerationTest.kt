@@ -182,5 +182,17 @@ class CommitMessageGenerationTest {
             com.intellij.openapi.actionSystem.impl.ActionToolbarImpl.updateAllToolbarsImmediately()
         }
     }
+
+    @Test
+    fun `custom icons are available and valid`() {
+        val pluginIconResource = javaClass.getResource("/META-INF/pluginIcon.svg")
+        org.junit.Assert.assertNotNull("META-INF/pluginIcon.svg must exist", pluginIconResource)
+
+        val buttonIconResource = javaClass.getResource("/icons/generateCommit.svg")
+        org.junit.Assert.assertNotNull("icons/generateCommit.svg must exist", buttonIconResource)
+
+        val icon = com.mirenqinggege.gitcommit.actions.GenerateCommitMessageAction.GENERATE_ICON
+        org.junit.Assert.assertNotNull("GENERATE_ICON must be loaded", icon)
+    }
 }
 
