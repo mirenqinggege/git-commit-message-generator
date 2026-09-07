@@ -12,9 +12,7 @@ import com.intellij.openapi.vcs.VcsDataKeys
 import com.intellij.openapi.vcs.changes.Change
 import com.intellij.openapi.vcs.ui.CommitMessage
 import com.intellij.vcs.commit.CommitWorkflowUi
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.CapturingProcessHandler
-import com.mirenqinggege.gitcommit.GitDiffCommandBuilder
+import com.mirenqinggege.gitcommit.GitDiffResolver
 import com.mirenqinggege.gitcommit.services.OpenAiCompatibleClient
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
 import com.mirenqinggege.gitcommit.GitCommitMessageBundle
@@ -41,21 +39,11 @@ class GenerateCommitMessageAction : DumbAwareAction() {
                 .notify(project)
             return
         }
-        val projectBasePath = project.basePath
-        if (projectBasePath == null) {
+        val changesByRoot = GitDiffResolver.groupChangesByRoot(project, selectedChanges)
+        if (changesByRoot.isEmpty()) {
             NotificationGroupManager.getInstance().getNotificationGroup("Git Commit Message Generator")
                 .createNotification(
-                    GitCommitMessageBundle.message("notification.project.path.missing"),
-                    NotificationType.ERROR
-                )
-                .notify(project)
-            return
-        }
-        val selectedPaths = selectedChanges.mapNotNull { it.relativePath(projectBasePath) }.distinct()
-        if (selectedPaths.isEmpty()) {
-            NotificationGroupManager.getInstance().getNotificationGroup("Git Commit Message Generator")
-                .createNotification(
-                    GitCommitMessageBundle.message("notification.no.selected.changes"),
+                    GitCommitMessageBundle.message("notification.git.root.missing"),
                     NotificationType.WARNING
                 )
                 .notify(project)
@@ -67,11 +55,10 @@ class GenerateCommitMessageAction : DumbAwareAction() {
                 try {
                     ApplicationManager.getApplication().invokeLater { commitMessage.setCommitMessage("") }
                     indicator.text = GitCommitMessageBundle.message("progress.reading.diff")
-                    val command = GeneralCommandLine(*GitDiffCommandBuilder.arguments(selectedPaths).toTypedArray())
-                        .withWorkDirectory(projectBasePath)
-                    val process = CapturingProcessHandler(command).runProcess()
-                    if (process.exitCode != 0) error(process.stderr.ifBlank { "Git diff failed (${process.exitCode})" })
-                    val diff = process.stdout
+                    val diff = GitDiffResolver.collectDiff(changesByRoot)
+                    if (diff.isBlank()) {
+                        error(GitCommitMessageBundle.message("error.diff.empty"))
+                    }
                     indicator.text = GitCommitMessageBundle.message("progress.asking.ai")
                     val result = StringBuilder()
                     OpenAiCompatibleClient(settings).generateStreaming(diff) { delta ->
@@ -96,8 +83,3 @@ private fun includedChanges(e: AnActionEvent): List<Change> =
     (e.getData(VcsDataKeys.COMMIT_WORKFLOW_UI) as? CommitWorkflowUi)?.getIncludedChanges()
         ?: e.getData(VcsDataKeys.CHANGES)?.toList().orEmpty()
 
-private fun Change.relativePath(projectBasePath: String): String? {
-    val path = virtualFile?.path ?: beforeRevision?.file?.path ?: afterRevision?.file?.path ?: return null
-    val basePath = projectBasePath.trimEnd('/') + "/"
-    return path.removePrefix(basePath).takeIf { it != path && it.isNotBlank() }
-}
