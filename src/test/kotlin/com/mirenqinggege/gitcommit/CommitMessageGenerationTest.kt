@@ -168,5 +168,11 @@ class CommitMessageGenerationTest {
 
         assertEquals(expected, combined)
     }
+
+    @Test
+    fun `stop action texts are configured in message bundles`() {
+        assertEquals("Stop Generating Commit Message", GitCommitMessageBundle.message("action.stop.text"))
+        assertEquals("Stop generating the commit message", GitCommitMessageBundle.message("action.stop.description"))
+    }
 }
 

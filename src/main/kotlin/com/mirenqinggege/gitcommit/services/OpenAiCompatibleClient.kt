@@ -53,7 +53,11 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
 
     fun listModels(): List<String> = createClient().models().list().data().map(Model::id)
 
-    fun generateStreaming(diff: String, onDelta: (String) -> Unit): String {
+    fun generateStreaming(
+        diff: String,
+        isCancelled: () -> Boolean = { false },
+        onDelta: (String) -> Unit
+    ): String {
         require(settings.baseUrl.isNotBlank()) { GitCommitMessageBundle.message("error.base.url.missing") }
         require(settings.apiKey.isNotBlank()) { GitCommitMessageBundle.message("error.api.key.missing") }
         require(diff.isNotBlank()) { GitCommitMessageBundle.message("error.diff.empty") }
@@ -69,7 +73,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
 
         val generated = StringBuilder()
         fun appendDelta(delta: String) {
-            if (delta.isEmpty()) return
+            if (delta.isEmpty() || isCancelled()) return
             generated.append(delta)
             onDelta(delta)
         }
@@ -82,7 +86,10 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                     .applyThinking(settings.enableThinking)
                     .build()
             ).use { stream ->
-                stream.stream().forEach { chunk ->
+                val iterator = stream.stream().iterator()
+                while (iterator.hasNext()) {
+                    if (isCancelled()) break
+                    val chunk = iterator.next()
                     chunk.choices().firstOrNull()?.delta()?.content()?.ifPresent(::appendDelta)
                 }
             }
@@ -94,10 +101,16 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                     .applyThinking(settings.enableThinking)
                     .build()
             ).use { stream ->
-                stream.stream().forEach { event: ResponseStreamEvent ->
+                val iterator = stream.stream().iterator()
+                while (iterator.hasNext()) {
+                    if (isCancelled()) break
+                    val event = iterator.next()
                     event.outputTextDelta().ifPresent { appendDelta(it.delta()) }
                 }
             }
+        }
+        if (isCancelled()) {
+            return generated.toString().trim()
         }
         return generated.toString().trim().takeIf { it.isNotBlank() }
             ?: error(GitCommitMessageBundle.message("error.response.empty"))
