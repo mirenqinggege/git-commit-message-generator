@@ -12,6 +12,8 @@ import com.intellij.openapi.vcs.VcsDataKeys
 import com.intellij.openapi.vcs.changes.Change
 import com.intellij.openapi.vcs.ui.CommitMessage
 import com.intellij.vcs.commit.CommitWorkflowUi
+import com.intellij.ide.ActivityTracker
+import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.mirenqinggege.gitcommit.GitDiffResolver
 import com.mirenqinggege.gitcommit.services.OpenAiCompatibleClient
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
@@ -58,6 +60,7 @@ class GenerateCommitMessageAction : DumbAwareAction() {
         if (existingTask != null) {
             existingTask.cancel()
             runningTasks.remove(project)
+            refreshToolbars()
             return
         }
 
@@ -84,6 +87,7 @@ class GenerateCommitMessageAction : DumbAwareAction() {
         val settings = ApplicationManager.getApplication().getService(GitCommitMessageSettings::class.java)
         val task = RunningTask()
         runningTasks[project] = task
+        refreshToolbars()
 
         task.future = ApplicationManager.getApplication().executeOnPooledThread {
             try {
@@ -108,7 +112,7 @@ class GenerateCommitMessageAction : DumbAwareAction() {
                         }
                     }
                 }
-            } catch (error: Exception) {
+            } catch (error: Throwable) {
                 if (!task.isCancelled) {
                     NotificationGroupManager.getInstance().getNotificationGroup("Git Commit Message Generator")
                         .createNotification(
@@ -119,7 +123,15 @@ class GenerateCommitMessageAction : DumbAwareAction() {
                 }
             } finally {
                 runningTasks.remove(project, task)
+                refreshToolbars()
             }
+        }
+    }
+
+    private fun refreshToolbars() {
+        ApplicationManager.getApplication().invokeLater {
+            ActivityTracker.getInstance().inc()
+            runCatching { ActionToolbarImpl.updateAllToolbarsImmediately() }
         }
     }
 

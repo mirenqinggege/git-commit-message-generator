@@ -174,5 +174,13 @@ class CommitMessageGenerationTest {
         assertEquals("Stop Generating Commit Message", GitCommitMessageBundle.message("action.stop.text"))
         assertEquals("Stop generating the commit message", GitCommitMessageBundle.message("action.stop.description"))
     }
+
+    @Test
+    fun `activity tracker and toolbar update are available on EDT`() {
+        javax.swing.SwingUtilities.invokeAndWait {
+            com.intellij.ide.ActivityTracker.getInstance().inc()
+            com.intellij.openapi.actionSystem.impl.ActionToolbarImpl.updateAllToolbarsImmediately()
+        }
+    }
 }
 
