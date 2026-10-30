@@ -22,4 +22,10 @@ tasks {
     buildSearchableOptions {
         enabled = false
     }
+    named("prepareJarSearchableOptions") {
+        enabled = false
+    }
+    named("jarSearchableOptions") {
+        enabled = false
+    }
 }
