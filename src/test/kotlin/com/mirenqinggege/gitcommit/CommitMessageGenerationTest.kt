@@ -20,6 +20,8 @@ class CommitMessageGenerationTest {
         assertEquals(true, prompt.contains("Conventional Commits"))
         assertEquals(true, prompt.contains("<DIFF_START>"))
         assertEquals(true, prompt.contains("<DIFF_END>"))
+        assertEquals(true, prompt.contains("required for every non-trivial change"))
+        assertEquals(true, prompt.contains("2-5 concise bullet points"))
     }
 
     @Test
