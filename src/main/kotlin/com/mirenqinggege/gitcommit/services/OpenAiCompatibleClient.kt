@@ -4,8 +4,8 @@ import com.mirenqinggege.gitcommit.CommitPromptBuilder
 import com.mirenqinggege.gitcommit.GitCommitMessageBundle
 import com.mirenqinggege.gitcommit.settings.ApiType
 import com.mirenqinggege.gitcommit.settings.GitCommitMessageSettings
+import com.mirenqinggege.gitcommit.settings.ReasoningLevel
 import com.openai.client.okhttp.OpenAIOkHttpClient
-import com.openai.core.JsonValue
 import com.openai.models.Reasoning
 import com.openai.models.ReasoningEffort
 import com.openai.models.chat.completions.ChatCompletionCreateParams
@@ -19,12 +19,12 @@ data class OpenAiClientSettings(
     val apiKey: String,
     val model: String,
     val apiType: ApiType,
-    val enableThinking: Boolean = false
+    val reasoningLevel: ReasoningLevel = ReasoningLevel.LOW
 )
 
 class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
     constructor(settings: GitCommitMessageSettings) : this(
-        OpenAiClientSettings(settings.baseUrl, settings.apiKey, settings.model, settings.apiType, settings.enableThinking)
+        OpenAiClientSettings(settings.baseUrl, settings.apiKey, settings.model, settings.apiType, settings.reasoningLevel)
     )
 
     fun testConnection() {
@@ -36,7 +36,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                     .model(settings.model)
                     .addUserMessage(prompt)
                     .maxCompletionTokens(1)
-                    .applyThinking(settings.enableThinking)
+                    .applyReasoningLevel(settings.reasoningLevel)
                     .build()
             )
 
@@ -45,7 +45,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                     .model(settings.model)
                     .input(prompt)
                     .maxOutputTokens(1)
-                    .applyThinking(settings.enableThinking)
+                    .applyReasoningLevel(settings.reasoningLevel)
                     .build()
             )
         }
@@ -83,7 +83,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                 ChatCompletionCreateParams.builder()
                     .model(settings.model)
                     .addUserMessage(prompt)
-                    .applyThinking(settings.enableThinking)
+                    .applyReasoningLevel(settings.reasoningLevel)
                     .build()
             ).use { stream ->
                 val iterator = stream.stream().iterator()
@@ -98,7 +98,7 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                 ResponseCreateParams.builder()
                     .model(settings.model)
                     .input(prompt)
-                    .applyThinking(settings.enableThinking)
+                    .applyReasoningLevel(settings.reasoningLevel)
                     .build()
             ).use { stream ->
                 val iterator = stream.stream().iterator()
@@ -136,23 +136,15 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
     }
 }
 
-/**
- * When thinking is disabled, every known spelling of "no reasoning" is sent because
- * OpenAI-compatible providers disagree on which parameter they honor. When enabled, nothing
- * is added and the provider's default applies.
- */
-internal fun ChatCompletionCreateParams.Builder.applyThinking(enableThinking: Boolean): ChatCompletionCreateParams.Builder =
-    if (enableThinking) this else apply {
-        reasoningEffort(ReasoningEffort.NONE)
-        putAdditionalBodyProperty("reasoning_effort", JsonValue.from("none"))
-        putAdditionalBodyProperty("enable_thinking", JsonValue.from(false))
-        putAdditionalBodyProperty("thinking", JsonValue.from(mapOf("type" to "disabled")))
-    }
+internal fun ChatCompletionCreateParams.Builder.applyReasoningLevel(level: ReasoningLevel): ChatCompletionCreateParams.Builder =
+    apply { reasoningEffort(level.toOpenAiReasoningEffort()) }
 
-internal fun ResponseCreateParams.Builder.applyThinking(enableThinking: Boolean): ResponseCreateParams.Builder =
-    if (enableThinking) this else apply {
-        reasoning(Reasoning.builder().effort(ReasoningEffort.NONE).build())
-        putAdditionalBodyProperty("reasoning_effort", JsonValue.from("none"))
-        putAdditionalBodyProperty("enable_thinking", JsonValue.from(false))
-        putAdditionalBodyProperty("thinking", JsonValue.from(mapOf("type" to "disabled")))
-    }
+internal fun ResponseCreateParams.Builder.applyReasoningLevel(level: ReasoningLevel): ResponseCreateParams.Builder =
+    apply { reasoning(Reasoning.builder().effort(level.toOpenAiReasoningEffort()).build()) }
+
+private fun ReasoningLevel.toOpenAiReasoningEffort(): ReasoningEffort = when (this) {
+    ReasoningLevel.MINIMAL -> ReasoningEffort.MINIMAL
+    ReasoningLevel.LOW -> ReasoningEffort.LOW
+    ReasoningLevel.MEDIUM -> ReasoningEffort.MEDIUM
+    ReasoningLevel.HIGH -> ReasoningEffort.HIGH
+}

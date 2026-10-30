@@ -10,6 +10,13 @@ import com.intellij.openapi.components.Storage
 
 enum class ApiType { COMPLETIONS, RESPONSES }
 
+enum class ReasoningLevel(val id: String) {
+    MINIMAL("minimal"),
+    LOW("low"),
+    MEDIUM("medium"),
+    HIGH("high")
+}
+
 @Service(Service.Level.APP)
 @State(name = "GitCommitMessageGeneratorSettings", storages = [Storage("gitCommitMessageGenerator.xml")])
 class GitCommitMessageSettings : PersistentStateComponent<GitCommitMessageSettings.State> {
@@ -17,7 +24,7 @@ class GitCommitMessageSettings : PersistentStateComponent<GitCommitMessageSettin
         var baseUrl: String = "https://api.openai.com/v1",
         var model: String = "gpt-4o-mini",
         var apiType: ApiType = ApiType.RESPONSES,
-        var enableThinking: Boolean = false
+        var reasoningLevel: ReasoningLevel = ReasoningLevel.LOW
     )
 
     private var state = State()
@@ -31,7 +38,7 @@ class GitCommitMessageSettings : PersistentStateComponent<GitCommitMessageSettin
     var baseUrl: String get() = state.baseUrl; set(value) { state.baseUrl = value }
     var model: String get() = state.model; set(value) { state.model = value }
     var apiType: ApiType get() = state.apiType; set(value) { state.apiType = value }
-    var enableThinking: Boolean get() = state.enableThinking; set(value) { state.enableThinking = value }
+    var reasoningLevel: ReasoningLevel get() = state.reasoningLevel; set(value) { state.reasoningLevel = value }
 
     /** API key is persisted in the encrypted credential store, not the state XML. */
     var apiKey: String

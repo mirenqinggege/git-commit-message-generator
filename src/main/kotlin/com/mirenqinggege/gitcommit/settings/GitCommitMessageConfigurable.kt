@@ -3,8 +3,8 @@ package com.mirenqinggege.gitcommit.settings
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.progress.Task
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.JBLabel
@@ -22,7 +22,7 @@ class GitCommitMessageConfigurable : Configurable {
     private var apiKeyField: JBPasswordField? = null
     private var modelField: ComboBox<String>? = null
     private var apiTypeField: ComboBox<ApiType>? = null
-    private var thinkingCheckBox: JBCheckBox? = null
+    private var reasoningLevelField: ComboBox<ReasoningLevel>? = null
     private var statusLabel: JBLabel? = null
 
     override fun getDisplayName() = GitCommitMessageBundle.message("settings.display.name")
@@ -36,10 +36,14 @@ class GitCommitMessageConfigurable : Configurable {
             modelField = comboBox(listOf(settings().model)).component.apply { isEditable = true }
         }
         row(GitCommitMessageBundle.message("settings.api.type")) { apiTypeField = comboBox(ApiType.entries).component }
-        row {
-            thinkingCheckBox = checkBox(GitCommitMessageBundle.message("settings.thinking.label"))
-                .comment(GitCommitMessageBundle.message("settings.thinking.comment"))
-                .component
+        row(GitCommitMessageBundle.message("settings.reasoning.level")) {
+            reasoningLevelField = comboBox(ReasoningLevel.entries)
+                .comment(GitCommitMessageBundle.message("settings.reasoning.level.comment"))
+                .component.apply {
+                    renderer = SimpleListCellRenderer.create("") { level: ReasoningLevel ->
+                        reasoningLevelText(level)
+                    }
+                }
         }
         row { comment(GitCommitMessageBundle.message("settings.description")) }
         row {
@@ -55,7 +59,7 @@ class GitCommitMessageConfigurable : Configurable {
         return baseUrlField?.text != settings.baseUrl ||
             String(apiKeyField?.password ?: charArrayOf()) != settings.apiKey ||
             modelField?.selectedItem?.toString() != settings.model || apiTypeField?.selectedItem != settings.apiType ||
-            thinkingCheckBox?.isSelected != settings.enableThinking
+            reasoningLevelField?.selectedItem != settings.reasoningLevel
     }
 
     override fun apply() {
@@ -64,7 +68,7 @@ class GitCommitMessageConfigurable : Configurable {
         settings.apiKey = String(apiKeyField?.password ?: charArrayOf())
         settings.model = modelField?.selectedItem?.toString().orEmpty().trim()
         settings.apiType = apiTypeField?.selectedItem as? ApiType ?: ApiType.RESPONSES
-        settings.enableThinking = thinkingCheckBox?.isSelected ?: false
+        settings.reasoningLevel = reasoningLevelField?.selectedItem as? ReasoningLevel ?: ReasoningLevel.LOW
     }
 
     override fun reset() {
@@ -73,7 +77,7 @@ class GitCommitMessageConfigurable : Configurable {
         apiKeyField?.text = settings.apiKey
         modelField?.selectedItem = settings.model
         apiTypeField?.selectedItem = settings.apiType
-        thinkingCheckBox?.isSelected = settings.enableThinking
+        reasoningLevelField?.selectedItem = settings.reasoningLevel
     }
 
     private fun settings() = ApplicationManager.getApplication().getService(GitCommitMessageSettings::class.java)
@@ -83,8 +87,11 @@ class GitCommitMessageConfigurable : Configurable {
         String(apiKeyField?.password ?: charArrayOf()),
         modelField?.selectedItem?.toString().orEmpty().trim(),
         apiTypeField?.selectedItem as? ApiType ?: ApiType.RESPONSES,
-        thinkingCheckBox?.isSelected ?: false
+        reasoningLevelField?.selectedItem as? ReasoningLevel ?: ReasoningLevel.LOW
     )
+
+    private fun reasoningLevelText(level: ReasoningLevel) =
+        GitCommitMessageBundle.message("settings.reasoning.level.${level.id}")
 
     private fun loadModels() {
         setStatus(GitCommitMessageBundle.message("settings.testing.connection"))

@@ -9,6 +9,7 @@
 - 支持 OpenAI-compatible 的 Completions（`/completions`）和 Responses（`/responses`）接口。
 - 使用官方 `com.openai:openai-java:4.52.0` SDK 发起流式请求，模型输出会实时填入提交消息编辑框。
 - 支持自定义 Base URL、API Key、模型名称和 API 类型。
+- 支持设置模型思考等级，默认使用 Low 以缩短提交消息生成时间。
 
 ## 配置
 

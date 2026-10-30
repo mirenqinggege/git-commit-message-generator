@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-30
+### Changed
+- Replace the thinking mode toggle with an explicit model reasoning level setting, defaulting to Low.
+
 ## [1.0.5] - 2026-10-30
 ### Added
 - Integrate the JetBrains Marketplace error handler for plugin exception and freeze reports.
