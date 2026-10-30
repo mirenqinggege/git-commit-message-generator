@@ -13,6 +13,7 @@
     <depends>com.intellij.modules.vcs</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <errorHandler implementation="com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter"/>
         <notificationGroup id="Git Commit Message Generator" displayType="BALLOON"
                            key="notification.group.git.commit.message.generator"/>
         <applicationConfigurable instance="com.mirenqinggege.gitcommit.settings.GitCommitMessageConfigurable"

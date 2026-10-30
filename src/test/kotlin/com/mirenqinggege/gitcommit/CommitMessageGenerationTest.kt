@@ -9,6 +9,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.w3c.dom.Element
+import javax.xml.parsers.DocumentBuilderFactory
 
 class CommitMessageGenerationTest {
 
@@ -29,6 +31,19 @@ class CommitMessageGenerationTest {
         assertEquals(
             listOf("git", "diff", "HEAD", "--", "src/main/App.kt", "README.md"),
             GitDiffCommandBuilder.arguments(listOf("src/main/App.kt", "README.md"))
+        )
+    }
+
+    @Test
+    fun `registers the JetBrains Marketplace error report handler`() {
+        val pluginXml = checkNotNull(javaClass.getResourceAsStream("/META-INF/plugin.xml"))
+        val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pluginXml)
+        val errorHandlers = document.getElementsByTagName("errorHandler")
+
+        assertEquals(1, errorHandlers.length)
+        assertEquals(
+            "com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter",
+            (errorHandlers.item(0) as Element).getAttribute("implementation")
         )
     }
 
