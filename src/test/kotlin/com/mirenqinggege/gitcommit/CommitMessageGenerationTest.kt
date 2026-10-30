@@ -49,6 +49,14 @@ class CommitMessageGenerationTest {
     }
 
     @Test
+    fun `plugin supports dynamic updates without restarting the IDE`() {
+        val pluginXml = checkNotNull(javaClass.getResourceAsStream("/META-INF/plugin.xml"))
+        val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pluginXml)
+
+        assertEquals("false", document.documentElement.getAttribute("require-restart"))
+    }
+
+    @Test
     fun `default reasoning level is low`() {
         assertEquals(ReasoningLevel.LOW, GitCommitMessageSettings.State().reasoningLevel)
     }

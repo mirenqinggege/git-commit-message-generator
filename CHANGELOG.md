@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-10-30
+### Changed
+- Allow dynamic plugin updates without restarting the IDE.
+
 ## [1.0.6] - 2026-10-30
 ### Changed
 - Replace the thinking mode toggle with an explicit model reasoning level setting, defaulting to Low.

@@ -37,5 +37,6 @@ src/main/resources/
 - **所有面向用户的文案以及 LLM 提示词模板都放在消息资源包里**（`prompt.template` 用 `{0}` 占位 diff）。`GitCommitMessageBundle.properties` 中新增的每个 key 都必须同步到 `GitCommitMessageBundle_zh_CN.properties`，反之亦然。
 - 提示词中要求模型忽略 diff 内嵌的指令（`<DIFF_START>`/`<DIFF_END>` 标记）。修改 `prompt.template` 时务必保留该安全段落。
 - Action 只注册在 `plugin.xml` 的 `ChangesView.CommitToolbar` 下；通知通过 `Git Commit Message Generator` 通知组发送。
+- `plugin.xml` 根元素保持 `require-restart="false"`，确保插件更新可使用 IntelliJ 的动态卸载流程而无需重启 IDE。
 - 模型思考等级由设置页的 `Reasoning level` 下拉框控制（默认 `LOW`，持久化为 `reasoningLevel`）。`OpenAiCompatibleClient.kt` 中的 `applyReasoningLevel` 会将所选等级映射为 Chat Completions 的 `reasoning_effort` 或 Responses 的 `reasoning.effort`，不再发送关闭思考的兼容参数。
 - 本仓库自身的提交消息遵循 Conventional Commits 规范（如 `feat(client): ...`），通常使用中文书写。
