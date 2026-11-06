@@ -107,13 +107,23 @@ class GenerateCommitMessageAction : DumbAwareAction() {
                     error(GitCommitMessageBundle.message("error.diff.empty"))
                 }
                 val result = StringBuilder()
-                OpenAiCompatibleClient(settings).generateStreaming(diff, isCancelled = { task.isCancelled }) { delta ->
+                val finalMessage = OpenAiCompatibleClient(settings).generateStreaming(
+                    diff,
+                    isCancelled = { task.isCancelled }
+                ) { delta ->
                     if (task.isCancelled) return@generateStreaming
                     result.append(delta)
                     val currentMessage = result.toString()
                     ApplicationManager.getApplication().invokeLater {
                         if (!task.isCancelled) {
                             commitMessage.setCommitMessage(currentMessage)
+                        }
+                    }
+                }
+                if (!task.isCancelled) {
+                    ApplicationManager.getApplication().invokeLater {
+                        if (!task.isCancelled) {
+                            commitMessage.setCommitMessage(finalMessage)
                         }
                     }
                 }

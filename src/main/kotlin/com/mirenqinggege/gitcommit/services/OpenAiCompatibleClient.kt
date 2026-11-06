@@ -11,8 +11,9 @@ import com.openai.models.ReasoningEffort
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.models.Model
 import com.openai.models.responses.ResponseCreateParams
-import com.openai.models.responses.ResponseStreamEvent
 import java.net.URI
+
+private val TRAILING_RFL_PARAMETER_TAG = Regex("\\s*</rfl:parameter>\\s*$", RegexOption.IGNORE_CASE)
 
 data class OpenAiClientSettings(
     val baseUrl: String,
@@ -109,10 +110,14 @@ class OpenAiCompatibleClient(private val settings: OpenAiClientSettings) {
                 }
             }
         }
+        val responseText = generated.toString().trim()
         if (isCancelled()) {
-            return generated.toString().trim()
+            return responseText
         }
-        return generated.toString().trim().takeIf { it.isNotBlank() }
+        return responseText
+            .replace(TRAILING_RFL_PARAMETER_TAG, "")
+            .trim()
+            .takeIf { it.isNotBlank() }
             ?: error(GitCommitMessageBundle.message("error.response.empty"))
     }
 

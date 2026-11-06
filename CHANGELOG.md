@@ -3,6 +3,8 @@
 # git-commit-message-generator Changelog
 
 ## [Unreleased]
+### Fixed
+- Remove a trailing tool-format tag from generated commit messages.
 
 ## [1.0.7] - 2026-10-30
 ### Changed
